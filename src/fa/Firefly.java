@@ -15,6 +15,7 @@ public class Firefly implements FAConstants {
 	 * @param numDimensions
 	 */
 	public Firefly(int numDimensions) {
+		position = new double[numDimensions];
 		Random r = new Random();
 		for (int i = 0; i < numDimensions; i++) {
 			position[i] = (r.nextDouble()-0.5)*BOUND;
@@ -27,6 +28,10 @@ public class Firefly implements FAConstants {
 	
 	public void setPosition(double[] newPosition) {
 		position = newPosition;
+	}
+	
+	public void setPosition(double newPosition, int dimension) {
+		position[dimension] = newPosition;
 	}
 	
 	public double getIntensity() {
