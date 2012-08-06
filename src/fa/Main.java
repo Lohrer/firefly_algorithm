@@ -17,7 +17,7 @@ public class Main implements FAConstants {
 	 */
 	public static void main(String[] args) {
 		long startTime = System.nanoTime();
-		int numEvaluations = 0;
+		long numEvaluations = 0;
 		
 		ProblemSet fitnessFunction = new ProblemSet(NUM_DIMENSIONS);
 		
@@ -29,15 +29,10 @@ public class Main implements FAConstants {
 			fireflies[i] = f;
 		}
 		
-		//long initTime = System.nanoTime();
-		//System.out.println("\tFireflies initialized in " + (initTime - startTime) / 1000 + " us");
-		
-		
-		//System.out.println("Running Algorithm");
 		// Find max distance and reduce gamma accordingly
 		double maxDistance = 0, tempDist;
-		for (int i = 0; i < NUM_FIREFLIES; i++) {
-			for (int j = 0; j < i; j++) {
+		for (int i = 0; i < (NUM_FIREFLIES-1); i++) {
+			for (int j = (i+1); j < NUM_FIREFLIES; j++) {
 				tempDist = 0;
 				for (int k = 0; k < NUM_DIMENSIONS; k++) {
 					tempDist += Math.pow(fireflies[j].getPosition()[k]-fireflies[i].getPosition()[k],2);
@@ -49,13 +44,18 @@ public class Main implements FAConstants {
 			}
 		}
 		double adjustedGamma = GAMMA/maxDistance;
+
+		// Variables for determining progress
+		System.out.println( "Progress: " );
+		float fPercentDone;
+		int   iPercentDone = 0;
+		long  currentTime;
+		long  timeRemaining;
 		
 		double alpha = ALPHA;	// Allow alpha to be reduced
 		int currentGeneration = 0;
-		while (currentGeneration < MAX_GENERATION) {
-			// Rank fireflies
-			
-			
+		double bestEvaluation = java.lang.Double.POSITIVE_INFINITY;
+		while (currentGeneration < MAX_GENERATION && bestEvaluation >= ERR_THRESHOLD) {
 			// Update Firefly positions
 			for (int i = 0; i < NUM_FIREFLIES; i++) {
 				for (int j = 0; j < NUM_FIREFLIES; j++) {	//for (int j = 0; j < i; j++) {
@@ -68,19 +68,36 @@ public class Main implements FAConstants {
 						// Move firefly i towards j
 						moveFirefly(alpha, beta, i, j);
 						// Update firefly i's intensity
-						fireflies[i].setIntensity( 1/fitnessFunction.evaluate(fireflies[i].getPosition()) );
+						double newEvaluation = fitnessFunction.evaluate(fireflies[i].getPosition());
+						fireflies[i].setIntensity( 1/newEvaluation );
 						numEvaluations++;
+						
+						// Check if best firefly
+						if (newEvaluation < bestEvaluation)
+						{
+							bestEvaluation = newEvaluation;
+						}
 					}
 				}
 			}
+			
 			// Reduce alpha for the next iteration
 			alpha = alpha*DELTA;
 			currentGeneration++;
+			
+			// Display percent done
+			if ( (int)(100*currentGeneration/MAX_GENERATION) - iPercentDone > 0 )
+			{
+				iPercentDone = (int)(100*currentGeneration/MAX_GENERATION);
+				currentTime = System.nanoTime();
+				System.out.print( iPercentDone + "% in " + (currentTime-startTime)/1000000000 + "s" );
+				
+				fPercentDone = ((float)currentGeneration/(float)MAX_GENERATION);
+				timeRemaining = (long)( (float)(currentTime - startTime) * (1/fPercentDone - 1) / 1000000000 );
+				System.out.println("\t\tTime remaining: " + timeRemaining + "s");
+			}
 		}
-		//long algTime = System.nanoTime();
-		//System.out.println("\tAlgorithm completed in " + (algTime - initTime) / 1000000 + " ms");
-		
-		//System.out.println("Calculating Results:");
+
 		double bestIntensity = fireflies[0].getIntensity();
 		int best = 0;
 		for (int i = 1; i < NUM_FIREFLIES; i++) {
