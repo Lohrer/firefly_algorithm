@@ -21,8 +21,7 @@ public class Main implements FAConstants
 		long startTime = System.nanoTime();
 		long numEvaluations = 0;
 
-		ProblemSet fitnessFunction = new ProblemSet(NUM_DIMENSIONS,
-				FUNCTIONTYPE);
+		ProblemSet fitnessFunction = new ProblemSet(NUM_DIMENSIONS, FUNCTIONTYPE);
 
 		// System.out.println("Initializing Fireflies");
 		fireflies = new Firefly[NUM_FIREFLIES];
@@ -42,8 +41,7 @@ public class Main implements FAConstants
 				tempDist = 0;
 				for (int k = 0; k < NUM_DIMENSIONS; k++)
 				{
-					tempDist += Math.pow(fireflies[j].getPosition()[k]
-							- fireflies[i].getPosition()[k], 2);
+					tempDist += Math.pow(fireflies[j].getPosition()[k] - fireflies[i].getPosition()[k], 2);
 				}
 				tempDist = (float) Math.sqrt(tempDist);
 				if (tempDist > maxDistance)
@@ -70,26 +68,20 @@ public class Main implements FAConstants
 			for (int i = 0; i < NUM_FIREFLIES; i++)
 			{
 				for (int j = 0; j < NUM_FIREFLIES; j++)
-				{ // for (int j = 0; j <
-					// i; j++) {
+				{
 					// Move firefly i towards j in d-dimension
-					if (fireflies[i].getIntensity() < fireflies[j]
-							.getIntensity())
+					if (fireflies[i].getIntensity() < fireflies[j].getIntensity())
 					{
-
 						// Get distance r from firefly i to j
-						float r = calculateDistance(fireflies[i].getPosition(),
-								fireflies[j].getPosition());
+						float r = calculateDistance(fireflies[i].getPosition(), fireflies[j].getPosition());
 
 						// Calculate attractiveness
-						float beta = BETA0
-								* (float) Math.exp(-adjustedGamma * r * r);
+						float beta = (1 - BETA_MIN) * (float) Math.exp(-adjustedGamma * r * r) + BETA_MIN;
 
 						// Move firefly i towards j
 						moveFirefly(alpha, beta, i, j);
 
-						float newEvaluation = fitnessFunction
-								.evaluate(fireflies[i].getPosition());
+						float newEvaluation = fitnessFunction.evaluate(fireflies[i].getPosition());
 
 						// Update firefly i's intensity
 						fireflies[i].setIntensity(1 / newEvaluation);
@@ -114,14 +106,11 @@ public class Main implements FAConstants
 			{
 				iPercentDone = (int) (100 * currentGeneration / MAX_GENERATION);
 				currentTime = System.nanoTime();
-				System.out.print(iPercentDone + "% in "
-						+ (currentTime - startTime) / 1000000000 + "s");
+				System.out.print(iPercentDone + "% in " + (currentTime - startTime) / 1000000000 + "s");
 
 				fPercentDone = ((float) currentGeneration / (float) MAX_GENERATION);
-				timeRemaining = (long) ((float) (currentTime - startTime)
-						* (1 / fPercentDone - 1) / 1000000000);
-				System.out
-						.println("\t\tTime remaining: " + timeRemaining + "s");
+				timeRemaining = (long) ((float) (currentTime - startTime) * (1 / fPercentDone - 1) / 1000000000);
+				System.out.println("\t\tTime remaining: " + timeRemaining + "s");
 			}
 		}
 
@@ -138,16 +127,14 @@ public class Main implements FAConstants
 		// System.out.println("\tResult calculation time: " + (endTime -
 		// algTime) / 1000 + " us");
 
-		System.out.println("Total time taken: " + (endTime - startTime)
-				/ 1000000 + " ms\n");
-		System.out.println("Number of function evaluations: " + numEvaluations
-				+ "\n");
+		System.out.println("Total time taken: " + (endTime - startTime) / 1000000 + " ms\n");
+		System.out.println("Number of function evaluations: " + numEvaluations + "\n");
 		System.out.println("Best Value: " + 1 / bestIntensity + "\n");
-		//System.out.println("Located at:");
-		//for (int i = 0; i < NUM_DIMENSIONS; i++)
-		//{
-		//	System.out.println("\t" + fireflies[best].getPosition()[i]);
-		//}
+		// System.out.println("Located at:");
+		// for (int i = 0; i < NUM_DIMENSIONS; i++)
+		// {
+		// System.out.println("\t" + fireflies[best].getPosition()[i]);
+		// }
 	}
 
 	/**
@@ -175,8 +162,7 @@ public class Main implements FAConstants
 		for (int d = 0; d < NUM_DIMENSIONS; d++)
 		{
 			position = fireflies[i].getPosition()[d];
-			position += beta * (fireflies[j].getPosition()[d] - position)
-					+ ALPHA * r.nextGaussian();
+			position += beta * (fireflies[j].getPosition()[d] - position) + ALPHA * r.nextGaussian();
 
 			// Make sure the firefly stays within the bounds
 			if (position > BOUND)
