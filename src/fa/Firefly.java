@@ -4,48 +4,50 @@ import java.util.Random;
 
 /**
  * @author Michael Lohrer
- * @version 0.1
+ * 
  */
 public class Firefly implements FAConstants
 {
 
-	private float lightIntensity;
-	private float[] position;
+	private double lightIntensity;
+	private double[] position;
 
 	/**
 	 * @param numDimensions
+	 * 
+	 *            Newly created fireflies are given a random location.
 	 */
 	public Firefly(int numDimensions)
 	{
-		position = new float[numDimensions];
+		position = new double[numDimensions];
 		Random r = new Random();
 		for (int i = 0; i < numDimensions; i++)
 		{
-			position[i] = (r.nextFloat() - 0.5f) * BOUND;
+			position[i] = LOWER_BOUND + (UPPER_BOUND - LOWER_BOUND) * r.nextDouble();
 		}
 	}
 
-	public float[] getPosition()
+	public double[] getPosition()
 	{
 		return position;
 	}
 
-	public void setPosition(float[] newPosition)
+	public void setPosition(double[] newPosition)
 	{
 		position = newPosition;
 	}
 
-	public void setPosition(float newPosition, int dimension)
+	public void setPosition(double newPosition, int dimension)
 	{
 		position[dimension] = newPosition;
 	}
 
-	public float getIntensity()
+	public double getIntensity()
 	{
 		return lightIntensity;
 	}
 
-	public void setIntensity(float intensity)
+	public void setIntensity(double intensity)
 	{
 		lightIntensity = intensity;
 	}

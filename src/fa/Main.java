@@ -4,13 +4,14 @@ import java.util.Random;
 
 /**
  * @author Michael Lohrer
- * @version 0.1
+ * @version 1.0
  * 
  */
 public class Main implements FAConstants
 {
 
 	private static Firefly[] fireflies;
+	private static Random r;
 
 	/**
 	 * @param args
@@ -19,21 +20,22 @@ public class Main implements FAConstants
 	public static void main(String[] args)
 	{
 		long startTime = System.nanoTime();
-		long numEvaluations = 0;
+		//int best = 0;
 
-		ProblemSet fitnessFunction = new ProblemSet(NUM_DIMENSIONS, FUNCTIONTYPE);
+		Functions fitnessFunction = new Functions(FUNCTIONTYPE);
+		r = new Random();
 
-		// System.out.println("Initializing Fireflies");
+		// Create and initialize the array of fireflies
 		fireflies = new Firefly[NUM_FIREFLIES];
 		for (int i = 0; i < NUM_FIREFLIES; i++)
 		{
 			Firefly f = new Firefly(NUM_DIMENSIONS);
-			f.setIntensity(1 / fitnessFunction.evaluate(f.getPosition()));
+			f.setIntensity( 1/fitnessFunction.evaluate(f.getPosition()) );
 			fireflies[i] = f;
 		}
 
-		// Find max distance and reduce gamma accordingly
-		float maxDistance = 0, tempDist;
+		// Find the max distance between fireflies and reduce GAMMA accordingly
+		double maxDistance = 0, tempDist;
 		for (int i = 0; i < (NUM_FIREFLIES - 1); i++)
 		{
 			for (int j = (i + 1); j < NUM_FIREFLIES; j++)
@@ -43,98 +45,109 @@ public class Main implements FAConstants
 				{
 					tempDist += Math.pow(fireflies[j].getPosition()[k] - fireflies[i].getPosition()[k], 2);
 				}
-				tempDist = (float) Math.sqrt(tempDist);
+				tempDist = Math.sqrt(tempDist);
 				if (tempDist > maxDistance)
 				{
 					maxDistance = tempDist;
 				}
 			}
 		}
-		float adjustedGamma = GAMMA / maxDistance;
+		double adjustedGamma = GAMMA / maxDistance;
 
 		// Variables for determining progress
 		System.out.println("Progress: ");
-		float fPercentDone;
+		double percentDone;
 		int iPercentDone = 0;
 		long currentTime;
 		long timeRemaining;
 
-		float alpha = ALPHA; // Allow alpha to be reduced
+		double alpha = ALPHA; // Allow alpha to be reduced
 		int currentGeneration = 0;
-		float bestEvaluation = java.lang.Float.POSITIVE_INFINITY;
+		double bestEvaluation = java.lang.Double.POSITIVE_INFINITY;
+		boolean moved = false;
+		
+		// Run main algorithm
 		while (currentGeneration < MAX_GENERATION && bestEvaluation >= ERR_THRESHOLD)
 		{
-			// Update Firefly positions
+			// Calculate new firefly positions
 			for (int i = 0; i < NUM_FIREFLIES; i++)
 			{
+				// Compare firefly i against all others and move towards any brighter ones
 				for (int j = 0; j < NUM_FIREFLIES; j++)
 				{
-					// Move firefly i towards j in d-dimension
-					if (fireflies[i].getIntensity() < fireflies[j].getIntensity())
+					// Move firefly i towards j in d-dimension if j is brighter (lower)
+					if (fireflies[i].getIntensity() > fireflies[j].getIntensity())
 					{
 						// Get distance r from firefly i to j
-						float r = calculateDistance(fireflies[i].getPosition(), fireflies[j].getPosition());
+						double r = calculateDistance(fireflies[i].getPosition(), fireflies[j].getPosition());
 
 						// Calculate attractiveness
-						float beta = (1 - BETA_MIN) * (float) Math.exp(-adjustedGamma * r * r) + BETA_MIN;
+						double beta = (1 - BETA_MIN) * Math.exp(-adjustedGamma * r * r) + BETA_MIN;
 
 						// Move firefly i towards j
 						moveFirefly(alpha, beta, i, j);
-
-						float newEvaluation = fitnessFunction.evaluate(fireflies[i].getPosition());
-
-						// Update firefly i's intensity
-						fireflies[i].setIntensity(1 / newEvaluation);
-
-						// Check if best firefly
-						if (newEvaluation < bestEvaluation)
-						{
-							bestEvaluation = newEvaluation;
-						}
-
-						numEvaluations++;
+						
+						moved = true;
 					}
 				}
-			}
+				
+				// If the firefly was never moved, move it a bit randomly
+				if(!moved)
+				{
+					for (int d = 0; d < NUM_DIMENSIONS; d++)
+					{
+						fireflies[i].getPosition()[d] += alpha * (r.nextDouble() - 0.5f);
+					}
+				}
+				moved = false;
+				
+				// Update firefly i's intensity
+				double newEvaluation = fitnessFunction.evaluate(fireflies[i].getPosition());
+				fireflies[i].setIntensity( newEvaluation );
+				
+				// Check if best position found so far
+				if (newEvaluation < bestEvaluation)
+				{
+					bestEvaluation = newEvaluation;
+				}
+			}	// END firefly position update
 
-			// Reduce alpha for the next iteration
+			// Reduce alpha for the next generation
 			alpha = alpha * DELTA;
 			currentGeneration++;
 
 			// Display percent done
-			if ((int) (100 * currentGeneration / MAX_GENERATION) - iPercentDone > 0)
+			if ( (int)(100*currentGeneration/MAX_GENERATION) - iPercentDone > 0 )
 			{
-				iPercentDone = (int) (100 * currentGeneration / MAX_GENERATION);
+				iPercentDone = (int)(100*currentGeneration/MAX_GENERATION);
 				currentTime = System.nanoTime();
-				System.out.print(iPercentDone + "% in " + (currentTime - startTime) / 1000000000 + "s");
-
-				fPercentDone = ((float) currentGeneration / (float) MAX_GENERATION);
-				timeRemaining = (long) ((float) (currentTime - startTime) * (1 / fPercentDone - 1) / 1000000000);
+				System.out.print( iPercentDone + "% in " + (currentTime-startTime)/1000000000 + "s" );
+				
+				percentDone = ((double)currentGeneration/(double)MAX_GENERATION);
+				timeRemaining = (long)( (float)(currentTime - startTime) * (1/percentDone - 1) / 1000000000 );
 				System.out.println("\t\tTime remaining: " + timeRemaining + "s");
 			}
 		}
 
-		float bestIntensity = fireflies[0].getIntensity();
+		double bestIntensity = fireflies[0].getIntensity();
 		for (int i = 1; i < NUM_FIREFLIES; i++)
 		{
-			if (fireflies[i].getIntensity() > bestIntensity)
+			if (fireflies[i].getIntensity() < bestIntensity)
 			{
 				bestIntensity = fireflies[i].getIntensity();
 			}
 		}
 
 		long endTime = System.nanoTime();
-		// System.out.println("\tResult calculation time: " + (endTime -
-		// algTime) / 1000 + " us");
 
 		System.out.println("Total time taken: " + (endTime - startTime) / 1000000 + " ms\n");
-		System.out.println("Number of function evaluations: " + numEvaluations + "\n");
-		System.out.println("Best Value: " + 1 / bestIntensity + "\n");
-		// System.out.println("Located at:");
-		// for (int i = 0; i < NUM_DIMENSIONS; i++)
-		// {
-		// System.out.println("\t" + fireflies[best].getPosition()[i]);
-		// }
+		System.out.println("Number of function evaluations: " + (currentGeneration*NUM_FIREFLIES+NUM_FIREFLIES) + "\n");
+		System.out.println("Best Value: " + bestIntensity + "\n");
+
+		//System.out.println("Located at:"); for (int i = 0; i <NUM_DIMENSIONS; i++)
+		//{
+		//	System.out.println("\t" + fireflies[best].getPosition()[i]);
+		//}
 	}
 
 	/**
@@ -142,36 +155,37 @@ public class Main implements FAConstants
 	 * 
 	 * @return Distance
 	 */
-	public static float calculateDistance(float[] position1, float[] position2)
+	public static double calculateDistance(double[] position1, double[] position2)
 	{
-		float sum = 0;
+		double sum = 0;
 		for (int d = 0; d < NUM_DIMENSIONS; d++)
 		{
 			sum += Math.pow(position2[d] - position1[d], 2);
 		}
-		return (float) Math.sqrt(sum);
+		return Math.sqrt(sum);
 	}
 
 	/**
 	 * Move firefly i towards j
 	 */
-	public static void moveFirefly(float alpha, float beta, int i, int j)
+	public static void moveFirefly(double alpha, double beta, int i, int j)
 	{
-		float position;
-		Random r = new Random();
+		double position;
+		double randomComponent;
 		for (int d = 0; d < NUM_DIMENSIONS; d++)
 		{
 			position = fireflies[i].getPosition()[d];
-			position += beta * (fireflies[j].getPosition()[d] - position) + ALPHA * r.nextGaussian();
+			randomComponent = alpha * (r.nextDouble() - 0.5f) * (UPPER_BOUND - LOWER_BOUND);
+			position += beta * (fireflies[j].getPosition()[d] - position) + randomComponent;
 
 			// Make sure the firefly stays within the bounds
-			if (position > BOUND)
+			if (position > UPPER_BOUND)
 			{
-				position = BOUND;
+				position = UPPER_BOUND;
 			}
-			if (position < -BOUND)
+			if (position < LOWER_BOUND)
 			{
-				position = -BOUND;
+				position = LOWER_BOUND;
 			}
 			fireflies[i].setPosition(position, d);
 		}
